@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Manajemen Ketertiban & Prestasi Siswa</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed top-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 transform translate-y-[-100px] opacity-0 transition-all duration-300 pointer-events-none">
+        <i data-lucide="check-circle" class="text-emerald-400 w-5 h-5"></i>
+        <span id="toastMessage" class="text-sm font-medium"></span>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-md border border-slate-200 max-w-md w-full text-center space-y-6">
+            <div>
+                <img id="loginLogo" src="https://placehold.co/150x150/1e3a8a/ffffff?text=Logo+Sekolah" alt="Logo" class="w-20 h-20 mx-auto rounded-2xl object-cover mb-4 shadow-inner">
+                <h1 id="loginSchoolName" class="text-xl font-bold text-slate-800">SMK Negeri 1 Maju Bersama</h1>
+                <p class="text-xs text-slate-500 mt-1">Sistem Informasi Tata Tertib & Akademik</p>
+            </div>
+            <form id="loginForm" class="space-y-4 text-left">
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 block mb-1">Username</label>
+                    <input type="text" id="username" required class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 block mb-1">Password</label>
+                    <input type="password" id="password" required class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div id="loginError" class="text-xs text-red-600 font-medium hidden flex items-center gap-1">
+                    <i data-lucide="alert-circle" class="w-4 h-4"></i> Username atau password salah!
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition transition-colors cursor-pointer">
+                    Masuk ke Sistem
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCREEN -->
+    <div id="appScreen" class="min-h-screen flex flex-col md:flex-row hidden">
+        <!-- SIDEBAR -->
+        <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col no-print">
+            <div class="p-5 border-b border-slate-800 flex items-center gap-3">
+                <img id="sidebarLogo" src="https://placehold.co/150x150/1e3a8a/ffffff?text=Logo+Sekolah" alt="Logo" class="w-9 h-9 rounded-xl object-cover">
+                <div class="truncate">
+                    <h2 id="sidebarSchoolName" class="font-bold text-sm text-white truncate">SMK Negeri 1 Maju Bersama</h2>
+                    <span class="text-[10px] text-slate-400 font-medium">Administrator</span>
+                </div>
+            </div>
+            <nav class="flex-1 p-4 space-y-1">
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 bg-slate-800 text-white text-left cursor-pointer">
+                    <i data-lucide="home" class="w-5 h-5"></i> Dashboard
+                </button>
+                <button onclick="switchTab('students')" id="btn-students" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-white text-left cursor-pointer">
+                    <i data-lucide="users" class="w-5 h-5"></i> Data Siswa
+                </button>
+                <button onclick="switchTab('settings')" id="btn-settings" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-white text-left cursor-pointer">
+                    <i data-lucide="settings" class="w-5 h-5"></i> Pengaturan
+                </button>
+            </nav>
+            <div class="p-4 border-t border-slate-800">
+                <button onclick="handleLogout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-950/30 transition duration-200 text-left cursor-pointer">
+                    <i data-lucide="log-out" class="w-5 h-5"></i> Keluar
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 min-w-0 bg-slate-50 overflow-y-auto">
+            
+            <!-- DASHBOARD TAB -->
+            <div id="tab-dashboard" class="tab-content p-6 space-y-6 animate-fade-in">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center border-b border-slate-200 pb-3 gap-2">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Dashboard Utama</h2>
+                        <p class="text-sm text-slate-500">Ringkasan tata tertib dan prestasi siswa</p>
+                    </div>
+                    <div>
+                        <span class="text-xs bg-blue-100 text-blue-800 font-semibold px-3 py-1 rounded-full">
+                            Tahun Ajaran Aktif 2026/2027
+                        </span>
+                    </div>
+                </div>
+
+                <!-- STATS CARDS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                            <i data-lucide="users"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Total Siswa</p>
+                            <h3 id="statTotalStudents" class="text-2xl font-extrabold text-slate-800">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold">
+                            <i data-lucide="alert-triangle"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Catatan Pelanggaran</p>
+                            <h3 id="statTotalViolations" class="text-2xl font-extrabold text-slate-800">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                            <i data-lucide="trophy"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Prestasi Ditempuh</p>
+                            <h3 id="statTotalAchievements" class="text-2xl font-extrabold text-slate-800">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                            <i data-lucide="alert-circle"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Perlu Panggilan Ortu</p>
+                            <h3 id="statAttentionNeeded" class="text-2xl font-extrabold text-amber-600">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ATTENTION TABLE -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                            <i data-lucide="alert-circle" class="text-red-500 w-5 h-5"></i> Siswa Memerlukan Pembinaan Khusus
+                        </h3>
+                        <span id="lblThreshold" class="text-xs text-slate-500">Batas ambang: 75 poin</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                          <thead class="bg-slate-50 text-slate-700 text-xs uppercase tracking-wider">
+                            <tr>
+                              <th class="p-4 border-b">Nama Siswa</th>
+                              <th class="p-4 border-b">Kelas & Jurusan</th>
+                              <th class="p-4 border-b text-center">Total Poin</th>
+                              <th class="p-4 border-b text-center">Aksi Tindak Lanjut</th>
+                            </tr>
+                          </thead>
+                          <tbody id="attentionTableBody" class="divide-y divide-slate-100 text-sm">
+                              <!-- Dinamis -->
+                          </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STUDENTS TAB -->
+            <div id="tab-students" class="tab-content p-6 space-y-6 animate-fade-in hidden">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center border-b border-slate-200 pb-3 gap-2">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Manajemen Data Siswa</h2>
+                        <p class="text-sm text-slate-500">Kelola nilai rapor, poin pelanggaran, serta rekapitulasi surat panggilan</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div class="relative w-full md:w-80">
+                        <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+                        <input type="text" id="searchStudent" oninput="renderStudentsTable()" placeholder="Cari nama siswa..." class="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    </div>
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto justify-end">
+                        <select id="filterGrade" onchange="renderStudentsTable()" class="px-3 py-2 border border-slate-300 rounded-xl text-sm bg-white focus:outline-none">
+                            <option value="">Semua Kelas</option>
+                            <option value="X">Kelas X</option>
+                            <option value="XI">Kelas XI</option>
+                            <option value="XII">Kelas XII</option>
+                        </select>
+                        <select id="filterMajor" onchange="renderStudentsTable()" class="px-3 py-2 border border-slate-300 rounded-xl text-sm bg-white focus:outline-none">
+                            <option value="">Semua Jurusan</option>
+                            <option value="TPM">Teknik Pemesinan</option>
+                            <option value="PTL">Listrik (PTL)</option>
+                            <option value="TII">Industri (TII)</option>
+                            <option value="APL">Laboratorium (APL)</option>
+                            <option value="DKV">DKV</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-50 text-slate-700 text-xs uppercase tracking-wider">
+                                <tr>
+                                    <th class="p-4 border-b">Nama</th>
+                                    <th class="p-4 border-b">Kelas</th>
+                                    <th class="p-4 border-b text-center">Poin Pelanggaran</th>
+                                    <th class="p-4 border-b text-center">Prestasi</th>
+                                    <th class="p-4 border-b text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTableBody" class="divide-y divide-slate-100 text-sm">
+                                <!-- Dinamis -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS TAB -->
+            <div id="tab-settings" class="tab-content p-6 space-y-6 animate-fade-in hidden">
+                <div class="border-b border-slate-200 pb-3">
+                    <h2 class="text-2xl font-bold text-slate-800">Pengaturan Sistem</h2>
+                    <p class="text-sm text-slate-500">Konfigurasi profile sekolah, identitas surat panggilan (KOP), dan ambang batas poin ketertiban</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2"><i data-lucide="settings" class="w-5 h-5 text-blue-600"></i> Identitas & Aturan Umum</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Nama Sekolah</label>
+                            <input type="text" id="setSchoolName" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">URL Logo Sekolah</label>
+                            <input type="text" id="setSchoolLogo" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Ambang Batas Poin Panggilan Orang Tua</label>
+                            <input type="number" id="setSummonThreshold" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2"><i data-lucide="file-text" class="w-5 h-5 text-emerald-600"></i> Format Kop Surat & Kepala Sekolah</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Kop Dinas (Baris Atas)</label>
+                            <textarea id="setKopDinas" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"></textarea>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Alamat Lembaga/Sekolah</label>
+                            <input type="text" id="setKopAlamat" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Nomor Telepon / Kontak</label>
+                            <input type="text" id="setKopTelp" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs font-semibold text-slate-600 block mb-1">Nama Kepala Sekolah</label>
+                                <input type="text" id="setKepsekName" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-slate-600 block mb-1">NIP Kepala Sekolah</label>
+                                <input type="text" id="setKepsekNIP" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button onclick="saveSettings()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm shadow-sm transition flex items-center gap-2 cursor-pointer">
+                        <i data-lucide="save" class="w-4 h-4"></i> Simpan Semua Perubahan
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- STUDENT DETAIL MODAL -->
+    <div id="detailModal" class="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden animate-fade-in no-print">
+        <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 id="modalStudentName" class="text-xl font-bold text-slate-800">Nama Siswa</h3>
+                    <p id="modalStudentMeta" class="text-xs text-slate-500 mt-0.5">Kelas / Jurusan</p>
+                </div>
+                <button onclick="closeModal()" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 transition cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="flex border-b border-slate-200 bg-white text-sm font-medium">
+                <button onclick="switchModalTab('profile')" id="btn-m-profile" class="px-5 py-3 border-b-2 border-blue-600 text-blue-600 cursor-pointer">Rekap Kedisiplinan & Nilai</button>
+                <button onclick="switchModalTab('letter')" id="btn-m-letter" class="px-5 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 cursor-pointer">Surat Panggilan Orang Tua</button>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex-1">
+                <!-- TAB INDIVIDU PROFILE -->
+                <div id="modal-tab-profile" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div class="bg-white p-4 rounded-xl shadow-xs border border-slate-200 md:col-span-1">
+                            <h4 class="font-bold text-xs uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5"><i data-lucide="book-open" class="w-4 h-4 text-blue-500"></i> Nilai Rapor (Rata-rata)</h4>
+                            <div id="raporGrid" class="grid grid-cols-2 gap-2 text-xs">
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow-xs border border-slate-200 md:col-span-1 space-y-3">
+                            <div class="flex justify-between items-center">
+                                <h4 class="font-bold text-xs uppercase tracking-wider text-slate-500 flex items-center gap-1.5"><i data-lucide="alert-triangle" class="text-red-500 w-4 h-4"></i> Pelanggaran</h4>
+                                <button onclick="addViolationPrompt()" class="text-xs text-red-600 hover:underline font-semibold cursor-pointer">+ Tambah</button>
+                            </div>
+                            <ul id="modalViolationsList" class="space-y-2 max-h-48 overflow-y-auto pr-1 text-xs">
+                            </ul>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow-xs border border-slate-200 md:col-span-1 space-y-3">
+                            <div class="flex justify-between items-center">
+                                <h4 class="font-bold text-xs uppercase tracking-wider text-slate-500 flex items-center gap-1.5"><i data-lucide="trophy" class="text-emerald-500 w-4 h-4"></i> Prestasi</h4>
+                                <button onclick="addAchievementPrompt()" class="text-xs text-emerald-600 hover:underline font-semibold cursor-pointer">+ Tambah</button>
+                            </div>
+                            <ul id="modalAchievementsList" class="space-y-2 max-h-48 overflow-y-auto pr-1 text-xs">
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB OFFICIAL PRINT LETTER -->
+                <div id="modal-tab-letter" class="hidden flex flex-col items-center space-y-4">
+                    <div class="w-full flex justify-end">
+                        <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white font-medium px-4 py-2 rounded-xl text-xs flex items-center gap-2 cursor-pointer shadow-sm">
+                            <i data-lucide="printer" class="w-4 h-4"></i> Cetak Surat Resmi (Kop Resmi)
+                        </button>
+                    </div>
+
+                    <div id="printArea" class="w-full max-w-2xl bg-white p-8 rounded-lg shadow-sm border font-serif text-black">
+                        <!-- KOP SURAT -->
+                        <div class="flex items-center border-b-4 border-double border-black pb-4 mb-6">
+                            <img id="letterSchoolLogo" src="https://placehold.co/150x150/ffffff/000000?text=Logo+Kop" alt="Logo" class="w-20 h-20 object-contain mr-4">
+                            <div class="text-center flex-1 pr-14">
+                                <h2 id="printKopDinas" class="font-bold text-base leading-tight uppercase whitespace-pre-line">PEMERINTAH PROVINSI JAWA TIMUR<br>DINAS PENDIDIKAN</h2>
+                                <h1 id="printSchoolNameHeader" class="font-bold text-xl uppercase tracking-wide">SMK NEGERI 1 MAJU BERSAMA</h1>
+                                <p id="printKopAlamat" class="text-xs italic font-sans mt-1">Jalan Mirah Delima Kota Baru Driyorejo (KBD), Kabupaten Gresik, Jawa Timur 61177</p>
+                                <p id="printKopTelp" class="text-xs font-sans">Telepon (031) 7580088</p>
+                            </div>
+                        </div>
+
+                        <!-- BODY SURAT -->
+                        <div class="space-y-4 text-justify font-sans text-sm">
+                            <div class="flex justify-between text-xs mb-4">
+                                <div>
+                                    <p>Nomor : 421.5 / <span class="font-mono">082</span> / 101.6.24.18 / 2026</p>
+                                    <p>Sifat &nbsp; : Penting / Segera</p>
+                                    <p>Hal &nbsp; &nbsp; : Panggilan Orang Tua / Wali Siswa</p>
+                                </div>
+                                <div class="text-right">
+                                    <p>Surabaya, 21 September 2026</p>
+                                </div>
+                            </div>
+
+                            <p class="mt-4">Kepada Yth,<br>Bapak / Ibu Orang Tua / Wali dari:<br><strong id="printLetterStudentName" class="text-base font-serif">Budi Santoso</strong> (Kelas: <span id="printLetterStudentClass">X APL 1</span>)</p>
+                            <p>Di Tempat</p>
+
+                            <p class="indent-8">Dengan hormat, Sehubungan dengan adanya catatan penegakan kedisiplinan dan tata tertib siswa di lingkungan sekolah, bersama ini kami mengharap kehadiran Bapak/Ibu Orang Tua/Wali murid pada:</p>
+                            
+                            <div class="pl-12 space-y-1">
+                                <p>Hari / Tanggal : Rabu, 23 September 2026</p>
+                                <p>Waktu &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;: 08.00 WIB s/d Selesai</p>
+                                <p>Tempat &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;: Ruang Bimbingan Konseling (BK)</p>
+                                <p>Keperluan &nbsp; &nbsp; &nbsp; &nbsp;: Koordinasi Khusus Perkembangan Ketertiban Siswa</p>
+                            </div>
+
+                            <p class="indent-8">Mengingat pentingnya agenda koordinasi pembinaan masa depan putra/putri Bapak/Ibu demi kenyamanan proses belajar mengajar, kehadiran Bapak/Ibu sangat kami harapkan tepat pada waktunya.</p>
+                            <p>Demikian surat panggilan ini disampaikan, atas perhatian dan kerja sama yang baik kami ucapkan terima kasih.</p>
+
+                            <div class="flex justify-end pt-12">
+                                <div class="text-center w-64">
+                                    <p>Mengetahui,</p>
+                                    <p class="font-semibold mb-20">Kepala Sekolah</p>
+                                    <p id="printKepsekName" class="font-bold underline uppercase">NINUK ISDANTI, S.Pd, M.Pd</p>
+                                    <p class="text-xs">NIP. <span id="printKepsekNIP">19790524 200701 2010</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initial Dummy Data Array (digunakan jika Local Storage masih kosong)
+        const initialStudents = [
+          {
+            id: '1', name: 'Budi Santoso', grade: 'X', major: 'APL', rombel: '1',
+            grades: { sem1: 85, sem2: 87, sem3: 0, sem4: 0, sem5: 0, sem6: 0 },
+            violations: [], achievements: [{ date: '2023-10-12', title: 'Juara 1 Lomba Kimia', level: 'Provinsi' }]
+          },
+          {
+            id: '2', name: 'Siti Aminah', grade: 'XII', major: 'DKV', rombel: '2',
+            grades: { sem1: 88, sem2: 90, sem3: 89, sem4: 92, sem5: 91, sem6: 0 },
+            violations: [{ date: '2023-11-01', description: 'Terlambat masuk gerbang', points: 10 }], 
+            achievements: []
+          },
+          {
+            id: '3', name: 'Agus Pratama', grade: 'XI', major: 'TPM', rombel: '1',
+            grades: { sem1: 78, sem2: 80, sem3: 82, sem4: 81, sem5: 0, sem6: 0 },
+            violations: [
+              { date: '2023-09-15', description: 'Membolos', points: 30 },
+              { date: '2023-10-20', description: 'Merokok di area sekolah', points: 50 }
+            ], 
+            achievements: []
+          }
+        ];
+
+        // Application App States Loaded from LocalStorage or Defaults
+        let students = JSON.parse(localStorage.getItem('SMK_STUDENTS_DATA')) || [...initialStudents];
+        let currentTab = 'dashboard';
+        let activeStudentId = null;
+        
+        // System Config states
+        let schoolName = localStorage.getItem('SMK_SCHOOL_NAME') || 'SMK Negeri 1 Maju Bersama';
+        let schoolLogo = localStorage.getItem('SMK_SCHOOL_LOGO') || 'https://placehold.co/150x150/1e3a8a/ffffff?text=Logo+Sekolah';
+        let summonThreshold = Number(localStorage.getItem('SMK_SUMMON_THRESHOLD')) || 75;
+        let letterLogo = localStorage.getItem('SMK_LETTER_LOGO') || 'https://placehold.co/150x150/ffffff/000000?text=Logo+Kop';
+        let kopDinas = localStorage.getItem('SMK_KOP_DINAS') || 'PEMERINTAH PROVINSI JAWA TIMUR\nDINAS PENDIDIKAN';
+        let kopAlamat = localStorage.getItem('SMK_KOP_ALAMAT') || 'Jalan Mirah Delima Kota Baru Driyorejo (KBD), Kabupaten Gresik, Jawa Timur 61177';
+        let kopTelp = localStorage.getItem('SMK_KOP_TELP') || 'Telepon (031) 7580088';
+        let kepsekName = localStorage.getItem('SMK_KEPSEK_NAME') || 'NINUK ISDANTI, S.Pd, M.Pd';
+        let kepsekNIP = localStorage.getItem('SMK_KEPSEK_NIP') || '19790524 200701 2010';
+
+        // Save Current Students Data state helper
+        function saveStudentsToLocalStorage() {
+            localStorage.setItem('SMK_STUDENTS_DATA', JSON.stringify(students));
+        }
+
+        // On Load Init
+        window.addEventListener('DOMContentLoaded', () => {
+            initSettingsFormValues();
+            
+            // Login handler
+            document.getElementById('loginForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const u = document.getElementById('username').value;
+                const p = document.getElementById('password').value;
+                
+                if(u.toLowerCase() === 'admin' && p === 'admin123') {
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('appScreen').classList.remove('hidden');
+                    showToast("Login Berhasil! Selamat bekerja.");
+                    refreshAllUI();
+                } else {
+                    document.getElementById('loginError').classList.remove('hidden');
+                }
+            });
+            lucide.createIcons();
+        });
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = msg;
+            t.classList.remove('opacity-0', 'translate-y-[-100px]');
+            setTimeout(() => {
+                t.classList.add('opacity-0', 'translate-y-[-100px]');
+            }, 3000);
+        }
+
+        function calculatePoints(violations) {
+            if (!violations || !Array.isArray(violations)) return 0;
+            return violations.reduce((sum, v) => sum + (Number(v.points) || 0), 0);
+        }
+
+        function refreshAllUI() {
+            // Update settings inputs dynamically
+            document.getElementById('loginSchoolName').innerText = schoolName;
+            document.getElementById('sidebarSchoolName').innerText = schoolName;
+            document.getElementById('loginLogo').src = schoolLogo;
+            document.getElementById('sidebarLogo').src = schoolLogo;
+            document.getElementById('lblThreshold').innerText = `Batas ambang: ${summonThreshold} poin`;
+
+            // Metrics recalculations
+            const totalStudents = students.length;
+            const totalViolations = students.reduce((acc, curr) => acc + (curr.violations?.length || 0), 0);
+            const totalAchievements = students.reduce((acc, curr) => acc + (curr.achievements?.length || 0), 0);
+            const needingAttention = students.filter(s => calculatePoints(s.violations) >= summonThreshold);
+
+            document.getElementById('statTotalStudents').innerText = totalStudents;
+            document.getElementById('statTotalViolations').innerText = totalViolations;
+            document.getElementById('statTotalAchievements').innerText = totalAchievements;
+            document.getElementById('statAttentionNeeded').innerText = needingAttention.length;
+
+            // Render tables
+            renderAttentionTable(needingAttention);
+            renderStudentsTable();
+            lucide.createIcons();
+        }
+
+        // Render Dashboard Attention List Table
+        function renderAttentionTable(list) {
+            const tbody = document.getElementById('attentionTableBody');
+            tbody.innerHTML = '';
+
+            if(list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500 italic">Tidak ada siswa yang melampaui batas poin panggilan (${summonThreshold} poin).</td></tr>`;
+                return;
+            }
+
+            list.forEach(student => {
+                const totalPoints = calculatePoints(student.violations);
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 font-semibold text-slate-800">${student.name}</td>
+                    <td class="p-4 text-slate-600">${student.grade} ${student.major} ${student.rombel}</td>
+                    <td class="p-4 text-center"><span class="px-2.5 py-1 bg-red-100 text-red-700 font-bold text-xs rounded-full">${totalPoints} Poin</span></td>
+                    <td class="p-4 text-center">
+                        <button onclick="openStudentDetail('${student.id}', 'letter')" class="text-xs bg-red-600 hover:bg-red-700 text-white font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5 mx-auto transition cursor-pointer">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Buat Surat Panggilan
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Render Main Student List Content
+        function renderStudentsTable() {
+            const tbody = document.getElementById('studentsTableBody');
+            tbody.innerHTML = '';
+
+            const q = document.getElementById('searchStudent').value.toLowerCase();
+            const fGrade = document.getElementById('filterGrade').value;
+            const fMajor = document.getElementById('filterMajor').value;
+
+            const filtered = students.filter(s => {
+                const matchQ = s.name.toLowerCase().includes(q);
+                const matchGrade = fGrade === '' ? true : s.grade === fGrade;
+                const matchMajor = fMajor === '' ? true : s.major === fMajor;
+                return matchQ && matchGrade && matchMajor;
+            });
+
+            if(filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500 italic">Tidak menemukan kecocokan data siswa.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(s => {
+                const pts = calculatePoints(s.violations);
+                const isOver = pts >= summonThreshold;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition";
+                tr.innerHTML = `
+                    <td class="p-4 font-semibold text-slate-800">${s.name}</td>
+                    <td class="p-4 text-slate-600">${s.grade} ${s.major} ${s.rombel}</td>
+                    <td class="p-4 text-center">
+                        <span class="px-2 py-0.5 rounded-full font-bold text-xs ${isOver ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700'}">
+                            ${pts} pts
+                        </span>
+                    </td>
+                    <td class="p-4 text-center text-slate-600">${s.achievements?.length || 0}</td>
+                    <td class="p-4 text-center">
+                        <button onclick="openStudentDetail('${s.id}', 'profile')" class="text-xs text-blue-600 hover:text-blue-800 font-semibold px-2 py-1 cursor-pointer">
+                            Lihat Rincian / Tindak Lanjut
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        // Switch Active Application Tab
+        function switchTab(tabId) {
+            currentTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            ['dashboard', 'students', 'settings'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                if(t === tabId) {
+                    btn.classList.add('bg-slate-800', 'text-white');
+                    btn.classList.remove('text-slate-400', 'hover:bg-slate-800');
+                } else {
+                    btn.classList.remove('bg-slate-800', 'text-white');
+                    btn.classList.add('text-slate-400', 'hover:bg-slate-800');
+                }
+            });
+            refreshAllUI();
+        }
+
+        // Settings actions
+        function initSettingsFormValues() {
+            document.getElementById('setSchoolName').value = schoolName;
+            document.getElementById('setSchoolLogo').value = schoolLogo;
+            document.getElementById('setSummonThreshold').value = summonThreshold;
+            document.getElementById('setKopDinas').value = kopDinas.replace(/\n/g, '\n');
+            document.getElementById('setKopAlamat').value = kopAlamat;
+            document.getElementById('setKopTelp').value = kopTelp;
+            document.getElementById('setKepsekName').value = kepsekName;
+            document.getElementById('setKepsekNIP').value = kepsekNIP;
+        }
+
+        function saveSettings() {
+            schoolName = document.getElementById('setSchoolName').value;
+            schoolLogo = document.getElementById('setSchoolLogo').value;
+            summonThreshold = Number(document.getElementById('setSummonThreshold').value) || 75;
+            kopDinas = document.getElementById('setKopDinas').value;
+            kopAlamat = document.getElementById('setKopAlamat').value;
+            kopTelp = document.getElementById('setKopTelp').value;
+            kepsekName = document.getElementById('setKepsekName').value;
+            kepsekNIP = document.getElementById('setKepsekNIP').value;
+
+            // Persistent Saving to LocalStorage
+            localStorage.setItem('SMK_SCHOOL_NAME', schoolName);
+            localStorage.setItem('SMK_SCHOOL_LOGO', schoolLogo);
+            localStorage.setItem('SMK_SUMMON_THRESHOLD', summonThreshold);
+            localStorage.setItem('SMK_KOP_DINAS', kopDinas);
+            localStorage.setItem('SMK_KOP_ALAMAT', kopAlamat);
+            localStorage.setItem('SMK_KOP_TELP', kopTelp);
+            localStorage.setItem('SMK_KEPSEK_NAME', kepsekName);
+            localStorage.setItem('SMK_KEPSEK_NIP', kepsekNIP);
+
+            showToast("Pengaturan konfigurasi & dokumen resmi berhasil disimpan.");
+            refreshAllUI();
+        }
+
+        // Modal Handlers
+        function openStudentDetail(id, subTab = 'profile') {
+            activeStudentId = id;
+            const student = students.find(s => s.id === id);
+            if(!student) return;
+
+            document.getElementById('modalStudentName').innerText = student.name;
+            document.getElementById('modalStudentMeta').innerText = `Kelas: ${student.grade} ${student.major} ${student.rombel}`;
+            
+            // Build Printable Letter data contents
+            document.getElementById('printLetterStudentName').innerText = student.name;
+            document.getElementById('printLetterStudentClass').innerText = `${student.grade} ${student.major} ${student.rombel}`;
+            document.getElementById('printKopDinas').innerText = kopDinas.replace(/\n/g, '\n');
+            document.getElementById('printSchoolNameHeader').innerText = schoolName;
+            document.getElementById('printKopAlamat').innerText = kopAlamat;
+            document.getElementById('printKopTelp').innerText = kopTelp;
+            document.getElementById('printKepsekName').innerText = kepsekName;
+            document.getElementById('printKepsekNIP').innerText = kepsekNIP;
+            document.getElementById('letterSchoolLogo').src = letterLogo;
+
+            renderModalProfileData(student);
+            switchModalTab(subTab);
+
+            document.getElementById('detailModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+            activeStudentId = null;
+            refreshAllUI();
+        }
+
+        function switchModalTab(subTab) {
+            if(subTab === 'profile') {
+                document.getElementById('modal-tab-profile').classList.remove('hidden');
+                document.getElementById('modal-tab-letter').classList.add('hidden');
+                document.getElementById('btn-m-profile').className = "px-5 py-3 border-b-2 border-blue-600 text-blue-600 font-semibold cursor-pointer";
+                document.getElementById('btn-m-letter').className = "px-5 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 cursor-pointer";
+            } else {
+                document.getElementById('modal-tab-profile').classList.add('hidden');
+                document.getElementById('modal-tab-letter').classList.remove('hidden');
+                document.getElementById('btn-m-letter').className = "px-5 py-3 border-b-2 border-blue-600 text-blue-600 font-semibold cursor-pointer";
+                document.getElementById('btn-m-profile').className = "px-5 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 cursor-pointer";
+            }
+        }
+
+        function renderModalProfileData(student) {
+            // Render Rapor Averaging Cards
+            const grid = document.getElementById('raporGrid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 6; i++) {
+                const score = student.grades[`sem${i}`] || 0;
+                grid.innerHTML += `
+                    <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <span class="text-slate-400 font-medium block">Semester ${i}</span>
+                        <span class="text-sm font-bold ${score > 0 ? 'text-slate-800' : 'text-slate-300 italic'}">${score > 0 ? score : 'Kosong'}</span>
+                    </div>
+                `;
+            }
+
+            // Render Violations
+            const vList = document.getElementById('modalViolationsList');
+            vList.innerHTML = '';
+            if(!student.violations || student.violations.length === 0) {
+                vList.innerHTML = `<li class="text-slate-400 italic py-2">Bersih / Tidak ada pelanggaran ketertiban.</li>`;
+            } else {
+                student.violations.forEach((v, index) => {
+                    vList.innerHTML += `
+                        <li class="bg-red-50 text-red-900 border border-red-100 rounded-lg p-2 flex justify-between items-start gap-2">
+                            <div>
+                                <span class="font-bold block">${v.description}</span>
+                                <span class="text-[10px] text-red-500">${v.date}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-black bg-red-200 px-1.5 py-0.5 rounded text-[10px]">${v.points} Pts</span>
+                                <button onclick="deleteViolation(${index})" class="text-red-600 hover:text-red-900 cursor-pointer"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                        </li>
+                    `;
+                });
+            }
+
+            // Render Achievements
+            const aList = document.getElementById('modalAchievementsList');
+            aList.innerHTML = '';
+            if(!student.achievements || student.achievements.length === 0) {
+                aList.innerHTML = `<li class="text-slate-400 italic py-2">Belum mencatatkan prestasi eksternal.</li>`;
+            } else {
+                student.achievements.forEach((a, index) => {
+                    aList.innerHTML += `
+                        <li class="bg-emerald-50 text-emerald-900 border border-emerald-100 rounded-lg p-2 flex justify-between items-start gap-2">
+                            <div>
+                                <span class="font-bold block">${a.title}</span>
+                                <span class="text-[10px] text-emerald-600">${a.date} | Tingkat ${a.level}</span>
+                            </div>
+                            <button onclick="deleteAchievement(${index})" class="text-emerald-600 hover:text-emerald-900 cursor-pointer"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                        </li>
+                    `;
+                });
+            }
+            lucide.createIcons();
+        }
+
+        // Add Record Mutators
+        function addViolationPrompt() {
+            const desc = prompt("Masukkan Jenis/Deskripsi Pelanggaran:");
+            if(!desc) return;
+            const pts = Number(prompt("Masukkan Poin Pelanggaran (Angka):")) || 0;
+            
+            const student = students.find(s => s.id === activeStudentId);
+            if(student) {
+                const today = new Date().toISOString().split('T')[0];
+                student.violations.push({ date: today, description: desc, points: pts });
+                saveStudentsToLocalStorage();
+                showToast("Data pelanggaran kedisiplinan baru ditambahkan.");
+                renderModalProfileData(student);
+            }
+        }
+
+        function addAchievementPrompt() {
+            const title = prompt("Masukkan Nama/Judul Prestasi:");
+            if(!title) return;
+            const lvl = prompt("Masukkan Tingkat (cth: Kota, Provinsi, Nasional):") || 'Sekolah';
+            
+            const student = students.find(s => s.id === activeStudentId);
+            if(student) {
+                const today = new Date().toISOString().split('T')[0];
+                student.achievements.push({ date: today, title: title, level: lvl });
+                saveStudentsToLocalStorage();
+                showToast("Catatan pencapaian prestasi akademik/non-akademik ditambahkan.");
+                renderModalProfileData(student);
+            }
+        }
+
+        function deleteViolation(idx) {
+            if(confirm("Hapus catatan pelanggaran ini?")) {
+                const student = students.find(s => s.id === activeStudentId);
+                student.violations.splice(idx, 1);
+                saveStudentsToLocalStorage();
+                renderModalProfileData(student);
+            }
+        }
+
+        function deleteAchievement(idx) {
+            if(confirm("Hapus catatan prestasi ini?")) {
+                const student = students.find(s => s.id === activeStudentId);
+                student.achievements.splice(idx, 1);
+                saveStudentsToLocalStorage();
+                renderModalProfileData(student);
+            }
+        }
+
+        function handleLogout() {
+            document.getElementById('appScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('loginError').classList.add('hidden');
+            showToast("Anda telah keluar dari aplikasi.");
+        }
+    </script>
+</body>
+</html>
